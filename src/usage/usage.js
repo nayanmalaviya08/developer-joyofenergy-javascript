@@ -27,6 +27,25 @@ const usageForAllPricePlans = (pricePlans, readings) => {
         };
     });
 };
+const usageHistory = (readings, startDate, endDate) => {
+    const filteredReadings = readings.filter(reading => reading.time >= startDate && reading.time <= endDate);
+    if (filteredReadings.length === 0) {
+        return {
+            totalConsumption: 0,
+            averageConsumptionPerHour: 0,
+            readings: []
+        };
+    }
+
+    const totalConsumption = filteredReadings.reduce((sum, reading) => sum + reading.reading, 0);
+    const averageConsumptionPerHour = usage(filteredReadings);
+
+    return {
+        totalConsumption,
+        averageConsumptionPerHour,
+        readings: filteredReadings
+    };
+}
 
 module.exports = {
     average,
@@ -34,4 +53,5 @@ module.exports = {
     usage,
     usageCost,
     usageForAllPricePlans,
+    usageHistory
 };

@@ -3,6 +3,7 @@ const { readings } = require("./readings/readings");
 const { readingsData } = require("./readings/readings.data");
 const { read, store } = require("./readings/readings-controller");
 const { recommend, compare } = require("./price-plans/price-plans-controller");
+const { readUsage } = require("./usage/usageController");
 
 const app = express();
 app.use(express.json());
@@ -23,6 +24,10 @@ app.get("/price-plans/recommend/:smartMeterId", (req, res) => {
 
 app.get("/price-plans/compare-all/:smartMeterId", (req, res) => {
     res.send(compare(getReadings, req));
+});
+
+app.get("/usage/history/:smartMeterId", (req, res) => {
+    res.send(readUsage(getReadings, req));
 });
 
 const port = process.env.PORT || 8080;
