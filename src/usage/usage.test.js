@@ -10,13 +10,13 @@ const {
     usageHistory
 } = require("./usage");
 
-//Configuramos nuestro randomizador
+//We configure our randomizer
 const readingsRandom = [];
 const numReadings = 3 // cantidad de lecturas
 const startTime = Math.floor(new Date()/ 1000) - (3 * 24 * 60 * 60)
 let endTime = 0
 
-//Randomizamos las lecturas para el METER0
+//We randomize the readings for the METER0
 for (let i = 0; i < numReadings; i++) {
     const randomTime = startTime + (86400*i);
     if(i == numReadings -1) endTime = randomTime
@@ -24,14 +24,14 @@ for (let i = 0; i < numReadings; i++) {
     readingsRandom.push({ time: randomTime, reading: parseFloat(randomReading) });
 }
 
-//Cargamos lecturas que utilizaremos del randomizer
+//We load readings that we will use from the randomizer
 const { getReadings } = readings({
     [meters.METER0]: readingsRandom,
     [meters.METER1]: readingsRandom,
     [meters.METER2]: readingsRandom
 });
 
-//Cargamos respuestas que esperariamos  para hacer la comparacion de los funciones de dominio usage
+//We load responses that we would expect to make the comparison of the usage domain functions
 const averageRandomMeter0 = getReadings(meters.METER0).map(r => r.reading).reduce((sum,reading) => sum+reading,0).toFixed(5);
 const timeElapsedMeter0 = timeElapsedInHours(
     getReadings(meters.METER0)
