@@ -7,86 +7,79 @@ const {
     usage,
     usageCost,
     usageForAllPricePlans,
+    usageHistory
 } = require("./usage");
 
-describe("usage", () => {
-    it("should average all readings for a meter", () => {
-        const { getReadings } = readings({
-            [meters.METER0]: [
-                { time: 923874692387, reading: 0.26785 },
-                { time: 923874692387, reading: 0.26785 },
-                { time: 923874692387, reading: 0.26785 },
-            ],
-        });
+//We configure our randomizer
+const readingsRandom = [];
+const numReadings = 3 // cantidad de lecturas
+const startTime = Math.floor(new Date()/ 1000) - (3 * 24 * 60 * 60)
+let endTime = 0
 
+//We randomize the readings for the METER0
+for (let i = 0; i < numReadings; i++) {
+    const randomTime = startTime + (86400*i);
+    if(i == numReadings -1) endTime = randomTime
+    const randomReading = (Math.random() * (1.0 - 0.25) + 0.25).toFixed(5);
+    readingsRandom.push({ time: randomTime, reading: parseFloat(randomReading) });
+}
+
+//We load readings that we will use from the randomizer
+const { getReadings } = readings({
+    [meters.METER0]: readingsRandom,
+    [meters.METER1]: readingsRandom,
+    [meters.METER2]: readingsRandom
+});
+
+//We load responses that we would expect to make the comparison of the usage domain functions
+const averageRandomMeter0 = getReadings(meters.METER0).map(r => r.reading).reduce((sum,reading) => sum+reading,0).toFixed(5);
+const timeElapsedMeter0 = timeElapsedInHours(
+    getReadings(meters.METER0)
+);
+const averageRandomMeter2 = getReadings(meters.METER2).map(r => r.reading).reduce((sum,reading) => sum+reading,0).toFixed(5);
+const timeElapsedMeter2 = timeElapsedInHours(
+    getReadings(meters.METER2)
+);
+
+describe("usage", () => {
+
+    it("should average all readings for a meter", () => {
         const averageMeter0 = average(getReadings(meters.METER0));
 
-        expect(averageMeter0).toBe(0.26785);
+        expect(averageMeter0).toBe(averageRandomMeter0/numReadings);
     });
 
     it("should get time elapsed in hours for all readings for a meter", () => {
-        const { getReadings } = readings({
-            [meters.METER0]: [
-                { time: 1607686135, reading: 0.26785 },
-                { time: 1607599724, reading: 0.26785 },
-                { time: 1607512024, reading: 0.26785 },
-            ],
-        });
-
-        const timeElapsedMeter0 = timeElapsedInHours(
-            getReadings(meters.METER0)
-        );
-
-        expect(timeElapsedMeter0).toBe(48);
+        expect(timeElapsedMeter0).toBe((numReadings - 1) * 24);
     });
 
     it("should get usage for all readings for a meter", () => {
-        const { getReadings } = readings({
-            [meters.METER0]: [
-                { time: 1607686125, reading: 0.26785 },
-                { time: 1607599724, reading: 0.26785 },
-                { time: 1607513324, reading: 0.26785 },
-            ],
-        });
-
         const usageMeter0 = usage(getReadings(meters.METER0));
-
-        expect(usageMeter0).toBe(0.26785 / 48);
+        
+        expect(usageMeter0).toBe((averageRandomMeter0/numReadings) / timeElapsedMeter0);
     });
 
     it("should get usage cost for all readings for a meter", () => {
+        const rate = meterPricePlanMap[meters.METER2].rate;
         const { getReadings } = readings({
-            [meters.METER2]: [
-                { time: 1607686125, reading: 0.26785 },
-                { time: 1607599724, reading: 0.26785 },
-                { time: 1607513324, reading: 0.26785 },
-            ],
+            [meters.METER2]: readingsRandom,
         });
 
-        const rate = meterPricePlanMap[meters.METER2].rate;
         const usageCostForMeter = usageCost(getReadings(meters.METER2), rate);
 
-        expect(usageCostForMeter).toBe(0.26785 / 48 * 1);
+        expect(usageCostForMeter).toBe(((averageRandomMeter0/numReadings) / timeElapsedMeter0) * rate);
     });
 
     it("should get usage cost for all readings for all price plans", () => {
-        const { getReadings } = readings({
-            [meters.METER2]: [
-                { time: 1607686125, reading: 0.26785 },
-                { time: 1607599724, reading: 0.26785 },
-                { time: 1607513324, reading: 0.26785 },
-            ],
-        });
-
         const expected = [
             {
-                [pricePlanNames.PRICEPLAN0]: 0.26785 / 48 * 10,
+                [pricePlanNames.PRICEPLAN0]: (averageRandomMeter2/numReadings) / timeElapsedMeter2 * 10,
             },
             {
-                [pricePlanNames.PRICEPLAN1]: 0.26785 / 48 * 2,
+                [pricePlanNames.PRICEPLAN1]: (averageRandomMeter2/numReadings) / timeElapsedMeter2 * 2,
             },
             {
-                [pricePlanNames.PRICEPLAN2]: 0.26785 / 48 * 1,
+                [pricePlanNames.PRICEPLAN2]: (averageRandomMeter2/numReadings) / timeElapsedMeter2 * 1,
             },
         ];
 
@@ -96,5 +89,28 @@ describe("usage", () => {
         );
 
         expect(usageForAllPricePlansArray).toEqual(expected);
+    });
+});
+
+describe('Historical Usage', () => {
+    
+    it('should return correct usage data for a given date range', () => {
+        const result = usageHistory(getReadings(meters.METER0), startTime, endTime);
+        
+        expect(result).toEqual({
+            totalConsumption: parseFloat(averageRandomMeter0),
+            averageConsumptionPerHour: ((averageRandomMeter0 / numReadings) / timeElapsedMeter0),
+            readings: getReadings(meters.METER0)
+        });
+    });
+
+    it('should return an empty array if no readings are within the date range', () => {
+        const result = usageHistory(getReadings(meters.METER0), 1607686125, 1607512024);
+        
+        expect(result).toEqual({
+            totalConsumption: 0,
+            averageConsumptionPerHour: 0,
+            readings: []
+        });
     });
 });

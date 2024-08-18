@@ -361,3 +361,61 @@ Example output
   }
 ]
 ```
+### Get History usage
+
+Endpoint
+
+```
+GET /usage/history/<smartMeterId>
+```
+
+Parameters
+
+| Parameter      | Description                              |
+| -------------- | ---------------------------------------- |
+| `smartMeterId` | One of the smart meters' id listed above |
+
+Retrieving readings using CURL
+
+```console
+$ curl "http://localhost:8080/usage/history/smart-meter-0"
+```
+
+Example output
+
+```json
+{
+    "totalConsumption": 6.204760635106196,
+    "averageConsumptionPerHour": 0.14773239607395705,
+    "readings": [
+        {
+            "time": 1607664525,
+            "reading": 0.6826619306762227
+        },
+        {
+            "time": 1607668125,
+            "reading": 0.8349251845201588
+        },
+        {
+            "time": 1607671725,
+            "reading": 1.1807094761880057
+        },
+        {
+            "time": 1607675325,
+            "reading": 1.9333537911077063
+        },
+        {
+            "time": 1607678925,
+            "reading": 0.20930963337121922
+        },
+        {
+            "time": 1607682525,
+            "reading": 0.8099168384477209
+        },
+        {
+            "time": 1607686125,
+            "reading": 0.5538837807951627
+        }
+    ]
+}
+```
